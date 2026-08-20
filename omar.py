@@ -6,8 +6,8 @@ import re
 import math
 from typing import Optional
 
-# --- CONFIGURATION (ENVIROMENT VARIABLES) ---
-TOKEN = os.getenv("TOKEN")            # 👈 Kay-qra TOKEN directement mn Railway
+# --- CONFIGURATION ---
+TOKEN = os.getenv("TOKEN")            # Kay-qra TOKEN mn Railway Variables
 TARGET_USER_ID = 1312155462346739733 # ID dyal l-compte li kay-stalam credits
 PROBOT_ID = 282859044593598464       # ID ProBot
 
@@ -23,6 +23,7 @@ EMOJIS = {
     "pin": "<a:ping:1539797253567418489>",        
     "price": "<a:MoneySoaring:1539798937345589308>",      
     "stock": "📦",      
+    "infinite": "<a:infiny:1539816359599546478>",                           
     "info": "<a:dev:1539799868782940231>",        
     "card": "<a:BlackMoneyCard:1323318279955152956>",       
     "gift": "<a:Oc_Giveway:1539800809691283546>",       
@@ -62,25 +63,13 @@ class ShopBot(commands.Bot):
 
 bot = ShopBot()
 
-def get_stock(file_path):
+# --- QRA L-FILE BLA MA T-MSEH MINHO (INFINITE STOCK) ---
+def get_product_data(file_path):
     if not os.path.exists(file_path):
-        return 0
+        return None
     with open(file_path, "r", encoding="utf-8") as f:
-        lines = [l.strip() for l in f.readlines() if l.strip()]
-    return len(lines)
-
-def pop_accounts(file_path, count):
-    if not os.path.exists(file_path):
-        return []
-    with open(file_path, "r", encoding="utf-8") as f:
-        lines = [l.strip() for l in f.readlines() if l.strip()]
-    if len(lines) < count:
-        return []
-    selected = lines[:count]
-    remaining = lines[count:]
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(remaining) + ("\n" if remaining else ""))
-    return selected
+        content = f.read().strip()
+    return content if content else None
 
 # --- COMMAND /STOCK ---
 @bot.tree.command(name="stock", description="Voir les produits disponibles en stock")
@@ -94,10 +83,13 @@ async def stock(interaction: discord.Interaction):
 
     embed = discord.Embed(title=f"{EMOJIS['cart']} Shop Stock", color=discord.Color.blue())
     for key, info in PRODUCTS.items():
-        count = get_stock(info["file"])
+        data = get_product_data(info["file"])
+        # Display Infinite ila l-fichier fih data
+        stock_display = f"{EMOJIS['infinite']} Infinite" if data else "0 (Hors stock)"
+        
         embed.add_field(
             name=f"{EMOJIS['pin']} {info['name']} (`{key}`)",
-            value=f"{EMOJIS['price']} **Price:** ${info['price']}\n{EMOJIS['stock']} **Stock:** {count}\n{EMOJIS['info']} **Type:** {info['type']}",
+            value=f"{EMOJIS['price']} **Price:** ${info['price']}\n{EMOJIS['stock']} **Stock:** {stock_display}\n{EMOJIS['info']} **Type:** {info['type']}",
             inline=False
         )
     await interaction.response.send_message(embed=embed)
@@ -109,7 +101,7 @@ async def stock(interaction: discord.Interaction):
     app_commands.Choice(name="Project Systeme Shop", value="shop"),
     app_commands.Choice(name="Project Broadcast", value="broadcast")
 ])
-async def buy(interaction: discord.Interaction, product: str, quantity: int):
+async def buy(interaction: discord.Interaction, product: str, quantity: int = 1):
     if BUY_CHANNEL_ID != 0 and interaction.channel_id != BUY_CHANNEL_ID:
         await interaction.response.send_message(
             f"{EMOJIS['error']} Cette commande ne peut être utilisée que dans le salon <#{BUY_CHANNEL_ID}>.", 
@@ -126,10 +118,9 @@ async def buy(interaction: discord.Interaction, product: str, quantity: int):
         await interaction.response.send_message(f"{EMOJIS['error']} Produit introuvable.", ephemeral=True)
         return
 
-    current_stock = get_stock(prod_info["file"])
-    
-    if current_stock < quantity:
-        await interaction.response.send_message(f"{EMOJIS['error']} Stock insuffisant ! Stock actuel: {current_stock}", ephemeral=True)
+    data = get_product_data(prod_info["file"])
+    if not data:
+        await interaction.response.send_message(f"{EMOJIS['error']} Produit actuellement indisponible en stock !", ephemeral=True)
         return
 
     total_price = prod_info["price"] * quantity
@@ -181,33 +172,23 @@ async def give(
         )
         return
 
-    if quantity <= 0:
-        await interaction.response.send_message(f"{EMOJIS['error']} La quantité doit être supérieure à 0.", ephemeral=True)
-        return
-
     prod_info = PRODUCTS.get(product)
     if not prod_info:
         await interaction.response.send_message(f"{EMOJIS['error']} Produit introuvable.", ephemeral=True)
         return
 
-    current_stock = get_stock(prod_info["file"])
-    if current_stock < quantity:
-        await interaction.response.send_message(f"{EMOJIS['error']} Stock insuffisant ! Stock actuel: {current_stock}", ephemeral=True)
+    data = get_product_data(prod_info["file"])
+    if not data:
+        await interaction.response.send_message(f"{EMOJIS['error']} Fichier produit introuvable ou vide !", ephemeral=True)
         return
 
-    accounts = pop_accounts(prod_info["file"], quantity)
-    if not accounts:
-        await interaction.response.send_message(f"{EMOJIS['error']} Erreur lors de la récupération du stock.", ephemeral=True)
-        return
-
-    acc_text = "\n".join(accounts)
     reason_str = f"\n{EMOJIS['reason']} **Raison:** {reason}" if reason else ""
 
     dm_embed = discord.Embed(title=f"{EMOJIS['gift']} Livraison Manuelle / Ta3wid", color=discord.Color.green())
     dm_embed.description = (
         f"Un administrateur vous a envoyé **{quantity}x {prod_info['name']}**.{reason_str}\n\n"
-        f"**Voici vos fichiers/comptes:**\n"
-        f"```\n{acc_text}\n```"
+        f"**Voici votre lien/accès au projet:**\n"
+        f"```\n{data}\n```"
     )
 
     try:
@@ -218,7 +199,7 @@ async def give(
     except Exception as e:
         await interaction.response.send_message(
             f"{EMOJIS['warning']} Impossible d'envoyer le MP à {user.mention} (DMs fermés).\n"
-            f"Voici le produit extrait du stock pour lui transmettre manuellement:\n```\n{acc_text}\n```",
+            f"Voici le contenu du projet à lui transmettre manuellement:\n```\n{data}\n```",
             ephemeral=True
         )
 
@@ -250,20 +231,19 @@ async def on_message(message: discord.Message):
                 if matched_user_id:
                     order = pending_orders.pop(matched_user_id)
                     prod_info = PRODUCTS[order["product"]]
-                    accounts = pop_accounts(prod_info["file"], order["quantity"])
+                    data = get_product_data(prod_info["file"])
 
                     try:
                         user = await bot.fetch_user(matched_user_id)
-                        if accounts and user:
-                            acc_text = "\n".join(accounts)
+                        if data and user:
                             await user.send(
                                 f"{EMOJIS['success']} **Paiement Reçu avec succès!**\n\n"
-                                f"Voici vos fichiers **{prod_info['name']}**:\n"
-                                f"```\n{acc_text}\n```"
+                                f"Voici votre lien/accès pour **{prod_info['name']}**:\n"
+                                f"```\n{data}\n```"
                             )
                             await message.channel.send(f"{EMOJIS['success']} Merci <@{matched_user_id}> ! Vos fichiers ont été envoyés en MP.")
                         else:
-                            await message.channel.send(f"{EMOJIS['warning']} Stock vide pour <@{matched_user_id}>.")
+                            await message.channel.send(f"{EMOJIS['warning']} Erreur lors de la récupération du fichier pour <@{matched_user_id}>.")
                     except Exception as e:
                         await message.channel.send(f"{EMOJIS['warning']} Impossible d'envoyer les fichiers en MP à <@{matched_user_id}> (DMs fermés).")
 
