@@ -6,8 +6,8 @@ import re
 import math
 from typing import Optional
 
-# --- CONFIGURATION ---
-TOKEN = ""   # ⚠️ Beddel Token jdid hna!
+# --- CONFIGURATION (ENVIROMENT VARIABLES) ---
+TOKEN = os.getenv("TOKEN")            # 👈 Kay-qra TOKEN directement mn Railway
 TARGET_USER_ID = 1312155462346739733 # ID dyal l-compte li kay-stalam credits
 PROBOT_ID = 282859044593598464       # ID ProBot
 
@@ -15,7 +15,7 @@ PROBOT_ID = 282859044593598464       # ID ProBot
 ALLOWED_ADMIN_IDS = [1488072348107014244, 1241496820455313533, 1242950158052884511] 
 STOCK_CHANNEL_ID = 1539813725865775224  
 BUY_CHANNEL_ID = 1539796754428465183    
-REFUND_CHANNEL_ID = 1539813213158506566 # 👈 Hna ddir ID dyal Room Ta3wid / Replacement
+REFUND_CHANNEL_ID = 1539813213158506566 
 
 # --- CUSTOM EMOJIS ---
 EMOJIS = {
@@ -52,10 +52,9 @@ class ShopBot(commands.Bot):
     async def on_ready(self):
         await self.tree.sync()
         
-        # --- STREAMING ACTIVITY (En direct) ---
         activity = discord.Streaming(
-            name="Discord.gg/Octopus-s",               # Smya/Lien li kay-tle3
-            url="https://www.twitch.tv/discord"        # Lien Twitch obligatoire bash t-khdem status Streaming
+            name="Discord.gg/Octopus-s",
+            url="https://www.twitch.tv/discord"
         )
         await self.change_presence(status=discord.Status.online, activity=activity)
         
@@ -168,7 +167,6 @@ async def give(
     quantity: int = 1, 
     reason: Optional[str] = None
 ):
-    # Verifier wach l-command t-daret f room dyal ta3wid
     if REFUND_CHANNEL_ID != 0 and interaction.channel_id != REFUND_CHANNEL_ID:
         await interaction.response.send_message(
             f"{EMOJIS['error']} Cette commande ne peut être utilisée que dans le salon <#{REFUND_CHANNEL_ID}>.", 
@@ -176,7 +174,6 @@ async def give(
         )
         return
 
-    # Verifier permissions Admin
     if interaction.user.id not in ALLOWED_ADMIN_IDS:
         await interaction.response.send_message(
             f"{EMOJIS['error']} Vous n'avez pas la permission d'utiliser cette commande.", 
