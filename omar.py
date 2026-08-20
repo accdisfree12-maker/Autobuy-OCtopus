@@ -23,7 +23,7 @@ EMOJIS = {
     "pin": "<a:ping:1539797253567418489>",        
     "price": "<a:MoneySoaring:1539798937345589308>",      
     "stock": "📦",      
-    ".": "<a:infiny:1539816359599546478>",                           
+    "Infinite": "<a:infiny:1539816359599546478>",                           
     "info": "<a:dev:1539799868782940231>",        
     "card": "<a:BlackMoneyCard:1323318279955152956>",       
     "gift": "<a:Oc_Giveway:1539800809691283546>",       
