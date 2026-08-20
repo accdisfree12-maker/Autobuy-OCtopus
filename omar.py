@@ -7,9 +7,9 @@ import math
 from typing import Optional
 
 # --- CONFIGURATION ---
-TOKEN = os.getenv("TOKEN")            # Kay-qra TOKEN mn Railway Variables
-TARGET_USER_ID = 1312155462346739733 # ID dyal l-compte li kay-stalam credits
-PROBOT_ID = 282859044593598464       # ID ProBot
+TOKEN = os.getenv("TOKEN")            
+TARGET_USER_ID = 1312155462346739733 
+PROBOT_ID = 282859044593598464       
 
 # --- PERMISSIONS & ROOMS CONFIG ---
 ALLOWED_ADMIN_IDS = [1488072348107014244, 1241496820455313533, 1242950158052884511] 
@@ -23,7 +23,7 @@ EMOJIS = {
     "pin": "<a:ping:1539797253567418489>",        
     "price": "<a:MoneySoaring:1539798937345589308>",      
     "stock": "📦",      
-    "infinite": "<a:infiny:1539816359599546478>",                           
+    ".": "<a:infiny:1539816359599546478>",                           
     "info": "<a:dev:1539799868782940231>",        
     "card": "<a:BlackMoneyCard:1323318279955152956>",       
     "gift": "<a:Oc_Giveway:1539800809691283546>",       
@@ -52,24 +52,17 @@ class ShopBot(commands.Bot):
 
     async def on_ready(self):
         await self.tree.sync()
-        
         activity = discord.Streaming(
             name="Discord.gg/Octopus-s",
             url="https://www.twitch.tv/discord"
         )
         await self.change_presence(status=discord.Status.online, activity=activity)
-        
         print(f"{EMOJIS['success']} Bot Online as: {self.user}")
 
 bot = ShopBot()
 
-# --- QRA L-FILE BLA MA T-MSEH MINHO (INFINITE STOCK) ---
-def get_product_data(file_path):
-    if not os.path.exists(file_path):
-        return None
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read().strip()
-    return content if content else None
+def is_product_available(file_path):
+    return os.path.exists(file_path) and os.path.getsize(file_path) > 0
 
 # --- COMMAND /STOCK ---
 @bot.tree.command(name="stock", description="Voir les produits disponibles en stock")
@@ -83,9 +76,8 @@ async def stock(interaction: discord.Interaction):
 
     embed = discord.Embed(title=f"{EMOJIS['cart']} Shop Stock", color=discord.Color.blue())
     for key, info in PRODUCTS.items():
-        data = get_product_data(info["file"])
-        # Display Infinite ila l-fichier fih data
-        stock_display = f"{EMOJIS['infinite']} Infinite" if data else "0 (Hors stock)"
+        available = is_product_available(info["file"])
+        stock_display = f"{EMOJIS['infinite']} Infinite" if available else "0 (Hors stock)"
         
         embed.add_field(
             name=f"{EMOJIS['pin']} {info['name']} (`{key}`)",
@@ -114,12 +106,7 @@ async def buy(interaction: discord.Interaction, product: str, quantity: int = 1)
         return
         
     prod_info = PRODUCTS.get(product)
-    if not prod_info:
-        await interaction.response.send_message(f"{EMOJIS['error']} Produit introuvable.", ephemeral=True)
-        return
-
-    data = get_product_data(prod_info["file"])
-    if not data:
+    if not prod_info or not is_product_available(prod_info["file"]):
         await interaction.response.send_message(f"{EMOJIS['error']} Produit actuellement indisponible en stock !", ephemeral=True)
         return
 
@@ -173,33 +160,25 @@ async def give(
         return
 
     prod_info = PRODUCTS.get(product)
-    if not prod_info:
-        await interaction.response.send_message(f"{EMOJIS['error']} Produit introuvable.", ephemeral=True)
-        return
-
-    data = get_product_data(prod_info["file"])
-    if not data:
+    if not prod_info or not is_product_available(prod_info["file"]):
         await interaction.response.send_message(f"{EMOJIS['error']} Fichier produit introuvable ou vide !", ephemeral=True)
         return
 
     reason_str = f"\n{EMOJIS['reason']} **Raison:** {reason}" if reason else ""
 
     dm_embed = discord.Embed(title=f"{EMOJIS['gift']} Livraison Manuelle / Ta3wid", color=discord.Color.green())
-    dm_embed.description = (
-        f"Un administrateur vous a envoyé **{quantity}x {prod_info['name']}**.{reason_str}\n\n"
-        f"**Voici votre lien/accès au projet:**\n"
-        f"```\n{data}\n```"
-    )
+    dm_embed.description = f"Un administrateur vous a envoyé **{quantity}x {prod_info['name']}**.{reason_str}\n\n📁 **Le fichier source est joint ci-dessous.**"
 
     try:
-        await user.send(embed=dm_embed)
+        # Sift l-fichier direct f DM
+        file_attachment = discord.File(prod_info["file"], filename=f"{prod_info['name']}.py")
+        await user.send(embed=dm_embed, file=file_attachment)
         await interaction.response.send_message(
             f"{EMOJIS['success']} **{quantity}x {prod_info['name']}** envoyé(s) avec succès à {user.mention} en MP !"
         )
     except Exception as e:
         await interaction.response.send_message(
-            f"{EMOJIS['warning']} Impossible d'envoyer le MP à {user.mention} (DMs fermés).\n"
-            f"Voici le contenu du projet à lui transmettre manuellement:\n```\n{data}\n```",
+            f"{EMOJIS['warning']} Impossible d'envoyer le MP à {user.mention} (DMs fermés). Error: `{e}`",
             ephemeral=True
         )
 
@@ -231,15 +210,14 @@ async def on_message(message: discord.Message):
                 if matched_user_id:
                     order = pending_orders.pop(matched_user_id)
                     prod_info = PRODUCTS[order["product"]]
-                    data = get_product_data(prod_info["file"])
 
                     try:
                         user = await bot.fetch_user(matched_user_id)
-                        if data and user:
+                        if is_product_available(prod_info["file"]) and user:
+                            file_attachment = discord.File(prod_info["file"], filename=f"{prod_info['name']}.py")
                             await user.send(
-                                f"{EMOJIS['success']} **Paiement Reçu avec succès!**\n\n"
-                                f"Voici votre lien/accès pour **{prod_info['name']}**:\n"
-                                f"```\n{data}\n```"
+                                content=f"{EMOJIS['success']} **Paiement Reçu avec succès!**\nVoici votre fichier source pour **{prod_info['name']}**:",
+                                file=file_attachment
                             )
                             await message.channel.send(f"{EMOJIS['success']} Merci <@{matched_user_id}> ! Vos fichiers ont été envoyés en MP.")
                         else:
