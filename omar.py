@@ -77,7 +77,7 @@ async def stock(interaction: discord.Interaction):
     embed = discord.Embed(title=f"{EMOJIS['cart']} Shop Stock", color=discord.Color.blue())
     for key, info in PRODUCTS.items():
         available = is_product_available(info["file"])
-        stock_display = f"{EMOJIS['infinite']} Infinite" if available else "0 (Hors stock)"
+        stock_display = f"{EMOJIS['Infinite']}" if available else "0 (Hors stock)"
         
         embed.add_field(
             name=f"{EMOJIS['pin']} {info['name']} (`{key}`)",
@@ -170,7 +170,6 @@ async def give(
     dm_embed.description = f"Un administrateur vous a envoyé **{quantity}x {prod_info['name']}**.{reason_str}\n\n📁 **Le fichier source est joint ci-dessous.**"
 
     try:
-        # Sift l-fichier direct f DM
         file_attachment = discord.File(prod_info["file"], filename=f"{prod_info['name']}.py")
         await user.send(embed=dm_embed, file=file_attachment)
         await interaction.response.send_message(
