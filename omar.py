@@ -37,7 +37,8 @@ PRODUCTS = {
     "shop": {"name": "Project Systeme Shop", "price": 65000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 20},
     "broadcast": {"name": "Project Broadcast", "price":  50000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 20},
     "giveaway": {"name": "Project Giveaway", "price": 40000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 20},
-    "invites": {"name": "Project Invites", "price": 35000000, "type": "Source Code", "file": "Invites.txt", "stock": 20}
+    "invites": {"name": "Project Invites", "price": 35000000, "type": "Source Code", "file": "Invites.txt", "stock": 20},
+    "Tax": {"name": "Project Tax", "price": 20000000, "type": "Source Code", "file": "Tax.txt", "stock": 20}
 }
 
 pending_orders = {}
@@ -129,7 +130,8 @@ async def stock(interaction: discord.Interaction):
     app_commands.Choice(name="Project Systeme Shop", value="shop"),
     app_commands.Choice(name="Project Broadcast", value="broadcast"),
     app_commands.Choice(name="Project Giveaway", value="giveaway"),
-    app_commands.Choice(name="Project Invites", value="invites")
+    app_commands.Choice(name="Project Invites", value="invites"),
+    app_commands.Choice(name="Project Tax", value="Tax")
 ])
 async def buy(interaction: discord.Interaction, product: str, quantity: int = 1):
     if BUY_CHANNEL_ID != 0 and interaction.channel_id != BUY_CHANNEL_ID:
@@ -183,7 +185,8 @@ async def buy(interaction: discord.Interaction, product: str, quantity: int = 1)
     app_commands.Choice(name="Project Systeme Shop", value="shop"),
     app_commands.Choice(name="Project Broadcast", value="broadcast"),
     app_commands.Choice(name="Project Giveaway", value="giveaway"),
-    app_commands.Choice(name="Project Invites", value="invites")
+    app_commands.Choice(name="Project Invites", value="invites"),
+    app_commands.Choice(name="Project Tax", value="Tax")
 ])
 async def give(
     interaction: discord.Interaction, 
