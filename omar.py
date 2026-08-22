@@ -23,7 +23,6 @@ EMOJIS = {
     "pin": "<a:ping:1539797253567418489>",        
     "price": "<a:MoneySoaring:1539798937345589308>",      
     "stock": "📦",      
-    "Infinite": "<a:infiny:1539816359599546478>",                           
     "info": "<a:dev:1539799868782940231>",        
     "card": "<a:BlackMoneyCard:1323318279955152956>",       
     "gift": "<a:Oc_Giveway:1539800809691283546>",       
@@ -34,9 +33,11 @@ EMOJIS = {
 }
 
 PRODUCTS = {
-    "autobuy": {"name": "Project Auto Buy", "price": 45000000, "type": "Source Code", "file": "Auto Buy.txt"},
-    "shop": {"name": "Project Systeme Shop", "price": 100000000, "type": "Source Code", "file": "Systeme Shop.txt"},
-    "broadcast": {"name": "Project Broadcast", "price": 1, "type": "Source Code", "file": "Broadcast.txt"}
+    "autobuy": {"name": "Project Auto Buy", "price": 45000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 10},
+    "shop": {"name": "Project Systeme Shop", "price": 100000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 10},
+    "broadcast": {"name": "Project Broadcast", "price": 1, "type": "Source Code", "file": "Broadcast.txt", "stock": 10},
+    "giveaway": {"name": "Project Giveaway", "price": 1, "type": "Source Code", "file": "Giveaway.txt", "stock": 0},
+    "invites": {"name": "Project Invites", "price": 1, "type": "Source Code", "file": "Invites.txt", "stock": 0}
 }
 
 pending_orders = {}
@@ -76,8 +77,11 @@ async def stock(interaction: discord.Interaction):
 
     embed = discord.Embed(title=f"{EMOJIS['cart']} Shop Stock", color=discord.Color.blue())
     for key, info in PRODUCTS.items():
-        available = is_product_available(info["file"])
-        stock_display = f"{EMOJIS['Infinite']}" if available else "0 (Hors stock)"
+        file_ok = is_product_available(info["file"])
+        if file_ok and info["stock"] > 0:
+            stock_display = str(info["stock"])
+        else:
+            stock_display = "0 (Hors stock)"
         
         embed.add_field(
             name=f"{EMOJIS['pin']} {info['name']} (`{key}`)",
@@ -91,7 +95,9 @@ async def stock(interaction: discord.Interaction):
 @app_commands.choices(product=[
     app_commands.Choice(name="Project Auto Buy", value="autobuy"),
     app_commands.Choice(name="Project Systeme Shop", value="shop"),
-    app_commands.Choice(name="Project Broadcast", value="broadcast")
+    app_commands.Choice(name="Project Broadcast", value="broadcast"),
+    app_commands.Choice(name="Project Giveaway", value="giveaway"),
+    app_commands.Choice(name="Project Invites", value="invites")
 ])
 async def buy(interaction: discord.Interaction, product: str, quantity: int = 1):
     if BUY_CHANNEL_ID != 0 and interaction.channel_id != BUY_CHANNEL_ID:
@@ -108,6 +114,13 @@ async def buy(interaction: discord.Interaction, product: str, quantity: int = 1)
     prod_info = PRODUCTS.get(product)
     if not prod_info or not is_product_available(prod_info["file"]):
         await interaction.response.send_message(f"{EMOJIS['error']} Produit actuellement indisponible en stock !", ephemeral=True)
+        return
+
+    if prod_info["stock"] < quantity:
+        await interaction.response.send_message(
+            f"{EMOJIS['error']} Stock insuffisant ! Stock disponible: **{prod_info['stock']}**", 
+            ephemeral=True
+        )
         return
 
     total_price = prod_info["price"] * quantity
@@ -136,7 +149,9 @@ async def buy(interaction: discord.Interaction, product: str, quantity: int = 1)
 @app_commands.choices(product=[
     app_commands.Choice(name="Project Auto Buy", value="autobuy"),
     app_commands.Choice(name="Project Systeme Shop", value="shop"),
-    app_commands.Choice(name="Project Broadcast", value="broadcast")
+    app_commands.Choice(name="Project Broadcast", value="broadcast"),
+    app_commands.Choice(name="Project Giveaway", value="giveaway"),
+    app_commands.Choice(name="Project Invites", value="invites")
 ])
 async def give(
     interaction: discord.Interaction, 
@@ -164,6 +179,13 @@ async def give(
         await interaction.response.send_message(f"{EMOJIS['error']} Fichier produit introuvable ou vide !", ephemeral=True)
         return
 
+    if prod_info["stock"] < quantity:
+        await interaction.response.send_message(
+            f"{EMOJIS['error']} Stock insuffisant ! Stock disponible: **{prod_info['stock']}**", 
+            ephemeral=True
+        )
+        return
+
     reason_str = f"\n{EMOJIS['reason']} **Raison:** {reason}" if reason else ""
 
     dm_embed = discord.Embed(title=f"{EMOJIS['gift']} Livraison Manuelle / Ta3wid", color=discord.Color.green())
@@ -172,8 +194,11 @@ async def give(
     try:
         file_attachment = discord.File(prod_info["file"], filename=f"{prod_info['name']}.py")
         await user.send(embed=dm_embed, file=file_attachment)
+        
+        prod_info["stock"] -= quantity
+
         await interaction.response.send_message(
-            f"{EMOJIS['success']} **{quantity}x {prod_info['name']}** envoyé(s) avec succès à {user.mention} en MP !"
+            f"{EMOJIS['success']} **{quantity}x {prod_info['name']}** envoyé(s) avec succès à {user.mention} en MP ! (Stock restant: {prod_info['stock']})"
         )
     except Exception as e:
         await interaction.response.send_message(
@@ -212,15 +237,18 @@ async def on_message(message: discord.Message):
 
                     try:
                         user = await bot.fetch_user(matched_user_id)
-                        if is_product_available(prod_info["file"]) and user:
+                        if is_product_available(prod_info["file"]) and user and prod_info["stock"] >= order["quantity"]:
                             file_attachment = discord.File(prod_info["file"], filename=f"{prod_info['name']}.py")
                             await user.send(
                                 content=f"{EMOJIS['success']} **Paiement Reçu avec succès!**\nVoici votre fichier source pour **{prod_info['name']}**:",
                                 file=file_attachment
                             )
+                            
+                            prod_info["stock"] -= order["quantity"]
+
                             await message.channel.send(f"{EMOJIS['success']} Merci <@{matched_user_id}> ! Vos fichiers ont été envoyés en MP.")
                         else:
-                            await message.channel.send(f"{EMOJIS['warning']} Erreur lors de la récupération du fichier pour <@{matched_user_id}>.")
+                            await message.channel.send(f"{EMOJIS['warning']} Erreur lors de la récupération du fichier ou stock épuisé pour <@{matched_user_id}>.")
                     except Exception as e:
                         await message.channel.send(f"{EMOJIS['warning']} Impossible d'envoyer les fichiers en MP à <@{matched_user_id}> (DMs fermés).")
 
