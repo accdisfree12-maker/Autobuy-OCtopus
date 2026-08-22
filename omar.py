@@ -33,11 +33,11 @@ EMOJIS = {
 }
 
 PRODUCTS = {
-    "autobuy": {"name": "Project Auto Buy", "price": 45000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 10},
-    "shop": {"name": "Project Systeme Shop", "price": 100000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 10},
-    "broadcast": {"name": "Project Broadcast", "price": 1, "type": "Source Code", "file": "Broadcast.txt", "stock": 10},
-    "giveaway": {"name": "Project Giveaway", "price": 1, "type": "Source Code", "file": "Giveaway.txt", "stock": 0},
-    "invites": {"name": "Project Invites", "price": 1, "type": "Source Code", "file": "Invites.txt", "stock": 0}
+    "autobuy": {"name": "Project Auto Buy", "price": 90000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 13},
+    "shop": {"name": "Project Systeme Shop", "price": 65000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 13},
+    "broadcast": {"name": "Project Broadcast", "price":  50000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 13},
+    "giveaway": {"name": "Project Giveaway", "price": 40000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 0},
+    "invites": {"name": "Project Invites", "price": 32000000, "type": "Source Code", "file": "Invites.txt", "stock": 0}
 }
 
 pending_orders = {}
@@ -64,6 +64,38 @@ bot = ShopBot()
 
 def is_product_available(file_path):
     return os.path.exists(file_path) and os.path.getsize(file_path) > 0
+
+# --- HELPER FUNCTION: UPDATE STOCK CHANNEL AUTOMATICALLY ---
+async def update_stock_display():
+    if STOCK_CHANNEL_ID == 0:
+        return
+    channel = bot.get_channel(STOCK_CHANNEL_ID)
+    if not channel:
+        try:
+            channel = await bot.fetch_channel(STOCK_CHANNEL_ID)
+        except Exception:
+            return
+
+    try:
+        await channel.purge(limit=10)
+    except Exception:
+        pass
+
+    embed = discord.Embed(title=f"{EMOJIS['cart']} Shop Stock", color=discord.Color.blue())
+    for key, info in PRODUCTS.items():
+        file_ok = is_product_available(info["file"])
+        if file_ok and info["stock"] > 0:
+            stock_display = str(info["stock"])
+        else:
+            stock_display = "0 (Hors stock)"
+        
+        embed.add_field(
+            name=f"{EMOJIS['pin']} {info['name']} (`{key}`)",
+            value=f"{EMOJIS['price']} **Price:** ${info['price']}\n{EMOJIS['stock']} **Stock:** {stock_display}\n{EMOJIS['info']} **Type:** {info['type']}",
+            inline=False
+        )
+    
+    await channel.send(embed=embed)
 
 # --- COMMAND /STOCK ---
 @bot.tree.command(name="stock", description="Voir les produits disponibles en stock")
@@ -200,6 +232,9 @@ async def give(
         await interaction.response.send_message(
             f"{EMOJIS['success']} **{quantity}x {prod_info['name']}** envoyé(s) avec succès à {user.mention} en MP ! (Stock restant: {prod_info['stock']})"
         )
+        
+        # Auto refresh stock channel
+        await update_stock_display()
     except Exception as e:
         await interaction.response.send_message(
             f"{EMOJIS['warning']} Impossible d'envoyer le MP à {user.mention} (DMs fermés). Error: `{e}`",
@@ -247,6 +282,9 @@ async def on_message(message: discord.Message):
                             prod_info["stock"] -= order["quantity"]
 
                             await message.channel.send(f"{EMOJIS['success']} Merci <@{matched_user_id}> ! Vos fichiers ont été envoyés en MP.")
+                            
+                            # Auto refresh stock channel
+                            await update_stock_display()
                         else:
                             await message.channel.send(f"{EMOJIS['warning']} Erreur lors de la récupération du fichier ou stock épuisé pour <@{matched_user_id}>.")
                     except Exception as e:
