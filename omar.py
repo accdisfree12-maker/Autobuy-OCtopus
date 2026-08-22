@@ -36,8 +36,8 @@ PRODUCTS = {
     "autobuy": {"name": "Project Auto Buy", "price": 90000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 13},
     "shop": {"name": "Project Systeme Shop", "price": 65000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 13},
     "broadcast": {"name": "Project Broadcast", "price":  50000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 13},
-    "giveaway": {"name": "Project Giveaway", "price": 40000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 0},
-    "invites": {"name": "Project Invites", "price": 32000000, "type": "Source Code", "file": "Invites.txt", "stock": 0}
+    "giveaway": {"name": "Project Giveaway", "price": 40000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 1},
+    "invites": {"name": "Project Invites", "price": 1, "type": "Source Code", "file": "Invites.txt", "stock": 1}
 }
 
 pending_orders = {}
