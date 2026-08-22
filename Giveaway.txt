@@ -1,1 +1,189 @@
-soon
+import os
+import discord
+from discord.ext import commands
+import re
+import asyncio
+import datetime
+import random
+
+# Get Token from Host Environment Variables
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# --- Parse Duration (1s, 1m, 1h, 1d) ---
+def parse_duration(duration_str: str) -> int:
+    match = re.match(r"^(\d+)([smhd])$", duration_str.lower().strip())
+    if not match:
+        return None
+    amount, unit = int(match.group(1)), match.group(2)
+    multipliers = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
+    return amount * multipliers[unit]
+
+# --- Modal Form ---
+class EditGiveawayModal(discord.ui.Modal, title="Edit Giveaway"):
+    prize = discord.ui.TextInput(
+        label="The prize of the giveaway",
+        placeholder="e.g. Credits, VIP, Nitro",
+        required=True
+    )
+    winners = discord.ui.TextInput(
+        label="The number of winners",
+        default="1",
+        placeholder="1",
+        required=True
+    )
+    duration = discord.ui.TextInput(
+        label="The duration (e.g. 10s, 10m, 10h, 1d)",
+        placeholder="1s / 1m / 1h / 1d",
+        required=True
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # 1. Parse Duration
+        duration_sec = parse_duration(self.duration.value)
+        if not duration_sec:
+            await interaction.response.send_message("❌ **Invalid duration!** Please use format: `10s`, `5m`, `2h`, or `1d`.", ephemeral=True)
+            return
+
+        # 2. Parse Winners
+        try:
+            winners_num = int(self.winners.value)
+            if winners_num < 1:
+                raise ValueError
+        except ValueError:
+            await interaction.response.send_message("❌ **Invalid number of winners!** Please enter a number greater than 0.", ephemeral=True)
+            return
+
+        # 3. Build updated Embed
+        embed = discord.Embed(
+            title="✨ Giveaway Setup",
+            description="Configure your giveaway parameters below before starting.",
+            color=discord.Color.blurple()
+        )
+        embed.add_field(name="📌 Channel", value=interaction.channel.mention, inline=False)
+        embed.add_field(name="👥 Winners", value=str(winners_num), inline=False)
+        embed.add_field(name="🎁 Prize", value=self.prize.value, inline=False)
+        embed.add_field(name="⏳ Duration", value=self.duration.value, inline=False)
+        embed.set_footer(text=f"Sec:{duration_sec}")
+
+        # Update message direct
+        await interaction.response.edit_message(embed=embed)
+
+# --- Setup Buttons ---
+class SetupButtonsView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Edit", style=discord.ButtonStyle.blurple, custom_id="btn_edit_setup")
+    async def edit_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(EditGiveawayModal())
+
+    @discord.ui.button(label="Start Giveaway", style=discord.ButtonStyle.green, custom_id="btn_start_setup")
+    async def start_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = interaction.message.embeds[0]
+        
+        winners_val = embed.fields[1].value
+        prize_val = embed.fields[2].value
+        duration_val = embed.fields[3].value
+        
+        if prize_val == "Not set" or duration_val == "Not set":
+            await interaction.response.send_message("❌ **Please click Edit first** to set the Prize and Duration!", ephemeral=True)
+            return
+
+        duration_sec = int(embed.footer.text.replace("Sec:", ""))
+        winners_num = int(winners_val)
+
+        # Disable setup buttons
+        for item in self.children:
+            item.disabled = True
+        await interaction.response.edit_message(view=self)
+
+        # Calculate End Time
+        end_time = int(datetime.datetime.now(datetime.timezone.utc).timestamp() + duration_sec)
+        
+        gw_embed = discord.Embed(
+            title=f"🎉 **GIVEAWAY: {prize_val}** 🎉",
+            description=(
+                f"Click the 🎁 button below to enter!\n\n"
+                f"• **Winners:** `{winners_num}`\n"
+                f"• **Hosted by:** {interaction.user.mention}\n"
+                f"• **Ends:** <t:{end_time}:R>"
+            ),
+            color=discord.Color.gold()
+        )
+
+        gw_view = GiveawayJoinView()
+        gw_msg = await interaction.channel.send(embed=gw_embed, view=gw_view)
+        
+        asyncio.create_task(run_giveaway(gw_msg, duration_sec, winners_num, prize_val, gw_view))
+
+# --- Join Button ---
+class GiveawayJoinView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.participants = set()
+
+    @discord.ui.button(emoji="🎁", label="Enter Giveaway", style=discord.ButtonStyle.primary, custom_id="btn_join_gw")
+    async def join_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id in self.participants:
+            self.participants.remove(interaction.user.id)
+            await interaction.response.send_message("❌ **You have left the giveaway.**", ephemeral=True)
+        else:
+            self.participants.add(interaction.user.id)
+            await interaction.response.send_message("🎉 **You have successfully entered the giveaway!**", ephemeral=True)
+
+# --- Run Timer & Select Winners ---
+async def run_giveaway(msg, seconds, winners_count, prize, view):
+    await asyncio.sleep(seconds)
+
+    for item in view.children:
+        item.disabled = True
+    
+    participants = list(view.participants)
+    
+    if len(participants) == 0:
+        result_text = "🎉 **Giveaway Ended!**\n\nNo participants entered the giveaway."
+        announcement = "📢 **Giveaway Ended:** No participants joined."
+    else:
+        win_list = random.sample(participants, min(len(participants), winners_count))
+        winners_mentions = ", ".join([f"<@{uid}>" for uid in win_list])
+        result_text = f"🎉 **Giveaway Ended!**\n\n• **Prize:** {prize}\n• **Winner(s):** {winners_mentions}"
+        announcement = f"🎊 **Congratulations** {winners_mentions}! You won **{prize}**!"
+
+    embed = msg.embeds[0]
+    embed.description = result_text
+    embed.color = discord.Color.dark_red()
+    
+    await msg.edit(embed=embed, view=view)
+    await msg.channel.send(announcement)
+
+# --- Command `/gcreate` ---
+@bot.tree.command(name="gcreate", description="Start a new giveaway setup")
+async def gcreate(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="✨ Giveaway Setup",
+        description="Configure your giveaway parameters below before starting.",
+        color=discord.Color.blurple()
+    )
+    embed.add_field(name="📌 Channel", value=interaction.channel.mention, inline=False)
+    embed.add_field(name="👥 Winners", value="1", inline=False)
+    embed.add_field(name="🎁 Prize", value="Not set", inline=False)
+    embed.add_field(name="⏳ Duration", value="Not set", inline=False)
+    embed.set_footer(text="Sec:0")
+
+    view = SetupButtonsView()
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+@bot.event
+async def on_ready():
+    bot.add_view(GiveawayJoinView())
+    await bot.tree.sync()
+    print(f"🔥 Bot is online: {bot.user}")
+
+if __name__ == "__main__":
+    if not DISCORD_TOKEN:
+        raise ValueError("❌ DISCORD_TOKEN is missing!")
+    bot.run(DISCORD_TOKEN)
