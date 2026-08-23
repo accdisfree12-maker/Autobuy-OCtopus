@@ -8,7 +8,7 @@ import random
 
 # --- CONFIGURATION ---
 ALLOWED_CHANNEL_ID = 1540870304459530341  # Channel ID where 'pr' and 'ct' are allowed
-ADDCREDIT_ADMIN_IDS = [1242950158052884511, 1241496820455313533]  # Specific IDs allowed for /addcredit
+ADDCREDIT_ADMIN_IDS = [ Put ur id here ]  # Specific IDs allowed for /addcredit
 DB_FILE = "database.json"
 
 intents = discord.Intents.default()
