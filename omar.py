@@ -32,14 +32,15 @@ EMOJIS = {
     "reason": "<:emoji_164:1539801927955648552>"      
 }
 
+# Zdt hna "tutorial" f kulla منتج باش تحط فيه lien dyal l-video dyalo
 PRODUCTS = {
-    "autobuy": {"name": "Project Auto Buy", "price": 30000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 6},
-    "shop": {"name": "Project Systeme Shop", "price": 30000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 6},
-    "broadcast": {"name": "Project Broadcast", "price":  30000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 6},
-    "giveaway": {"name": "Project Giveaway", "price": 30000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 6},
-    "invites": {"name": "Project Invites", "price": 30000000, "type": "Source Code", "file": "Invites.txt", "stock": 6},
-    "Tax": {"name": "Project Tax", "price": 30000000, "type": "Source Code", "file": "Tax.txt", "stock": 6},
-    "Coins": {"name": "Project Coins", "price": 30000000, "type": "Source Code", "file": "Coins.txt", "stock": 6}
+    "autobuy": {"name": "Project Auto Buy", "price": 30000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 6, "tutorial": "https://youtube.com/watch?v=EXAMPLE"},
+    "shop": {"name": "Project Systeme Shop", "price": 30000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 6, "tutorial": "https://youtube.com/watch?v=EXAMPLE"},
+    "broadcast": {"name": "Project Broadcast", "price": 30000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 6, "tutorial": "https://youtube.com/watch?v=EXAMPLE"},
+    "giveaway": {"name": "Project Giveaway", "price": 30000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 6, "tutorial": "https://youtube.com/watch?v=EXAMPLE"},
+    "invites": {"name": "Project Invites", "price": 30000000, "type": "Source Code", "file": "Invites.txt", "stock": 6, "tutorial": "https://youtube.com/watch?v=EXAMPLE"},
+    "Tax": {"name": "Project Tax", "price": 30000000, "type": "Source Code", "file": "Tax.txt", "stock": 6, "tutorial": "https://youtube.com/watch?v=EXAMPLE"},
+    "Coins": {"name": "Project Coins", "price": 30000000, "type": "Source Code", "file": "Coins.txt", "stock": 6, "tutorial": "https://youtube.com/watch?v=EXAMPLE"}
 }
 
 pending_orders = {}
@@ -225,9 +226,11 @@ async def give(
         return
 
     reason_str = f"\n{EMOJIS['reason']} **Raison:** {reason}" if reason else ""
+    tutorial_link = prod_info.get("tutorial", "")
+    tutorial_str = f"\n\n🎥 **Tutoriel Video:** {tutorial_link}" if tutorial_link else ""
 
     dm_embed = discord.Embed(title=f"{EMOJIS['gift']} Livraison Manuelle / Ta3wid", color=discord.Color.green())
-    dm_embed.description = f"Un administrateur vous a envoyé **{quantity}x {prod_info['name']}**.{reason_str}\n\n📁 **Le fichier source est joint ci-dessous.**"
+    dm_embed.description = f"Un administrateur vous a envoyé **{quantity}x {prod_info['name']}**.{reason_str}{tutorial_str}\n\n📁 **Le fichier source est joint ci-dessous.**"
 
     try:
         file_attachment = discord.File(prod_info["file"], filename=f"{prod_info['name']}.py")
@@ -280,8 +283,12 @@ async def on_message(message: discord.Message):
                         user = await bot.fetch_user(matched_user_id)
                         if is_product_available(prod_info["file"]) and user and prod_info["stock"] >= order["quantity"]:
                             file_attachment = discord.File(prod_info["file"], filename=f"{prod_info['name']}.py")
+                            
+                            tutorial_link = prod_info.get("tutorial", "")
+                            tutorial_msg = f"\n🎥 **Tutoriel Video:** {tutorial_link}" if tutorial_link else ""
+
                             await user.send(
-                                content=f"{EMOJIS['success']} **Paiement Reçu avec succès!**\nVoici votre fichier source pour **{prod_info['name']}**:",
+                                content=f"{EMOJIS['success']} **Paiement Reçu avec succès!**\nVoici votre fichier source pour **{prod_info['name']}**:{tutorial_msg}",
                                 file=file_attachment
                             )
                             
