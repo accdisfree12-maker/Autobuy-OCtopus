@@ -34,14 +34,15 @@ EMOJIS = {
 
 # Zdt hna "tutorial" f kulla منتج باش تحط فيه lien dyal l-video dyalo
 PRODUCTS = {
-    "autobuy": {"name": "Project Auto Buy", "price": 37500000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 3, "tutorial": "https://youtu.be/h4qCmWpSMZ8"},
-    "shop": {"name": "Project Systeme Shop", "price": 27500000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 3, "tutorial": "https://youtu.be/XobMtzyP8jE"},
+    "autobuy": {"name": "Project Auto Buy", "price": 37500000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 3, "tutorial": "https://youtu.be/BOKeCSEFZtY"},
+    "shop": {"name": "Project Systeme Shop", "price": 27500000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 3, "tutorial": "https://youtu.be/h4qCmWpSMZ8"},
     "broadcast": {"name": "Project Broadcast", "price": 25000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 3, "tutorial": "https://youtu.be/Jhw6q8OcivE"},
     "giveaway": {"name": "Project Giveaway", "price": 20000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 3, "tutorial": "https://youtu.be/5SWUG9360kM"},
     "invites": {"name": "Project Invites", "price": 17500000, "type": "Source Code", "file": "Invites.txt", "stock": 3, "tutorial": "https://youtu.be/RN6Has9NKp4"},
     "Tax": {"name": "Project Tax", "price": 15000000, "type": "Source Code", "file": "Tax.txt", "stock": 3, "tutorial": "https://youtu.be/usveduNlrm4"},
     "Coins": {"name": "Project Coins", "price": 12500000, "type": "Source Code", "file": "Coins.txt", "stock": 3, "tutorial": "https://youtu.be/Nk10PIzlfbU"},
     "Welcome": {"name": "Project Welcome", "price": 10000000, "type": "Source Code", "file": "Welcome.txt", "stock": 3, "Tutorial": "https://youtu.be/mGIw9Tznqd8"}
+    "Ticket": {"name": "Project Ticket", "price": 10000000, "type": "Source Code", "file": "Ticket.txt", "stock": 3, "Tutorial": ""}
 }
 
 pending_orders = {}
@@ -136,7 +137,8 @@ async def stock(interaction: discord.Interaction):
     app_commands.Choice(name="Project Invites", value="invites"),
     app_commands.Choice(name="Project Tax", value="Tax"),
     app_commands.Choice(name="Project Coins", value="Coins"),
-    app_commands.Choice(name="Project Welcome", value="Welcome")
+    app_commands.Choice(name="Project Welcome", value="Welcome"),
+    app_commands.Choice(name="Project Ticket", value="Ticket")
 ])
 async def buy(interaction: discord.Interaction, product: str, quantity: int = 1):
     if BUY_CHANNEL_ID != 0 and interaction.channel_id != BUY_CHANNEL_ID:
@@ -193,7 +195,8 @@ async def buy(interaction: discord.Interaction, product: str, quantity: int = 1)
     app_commands.Choice(name="Project Invites", value="invites"),
     app_commands.Choice(name="Project Tax", value="Tax"),
     app_commands.Choice(name="Project Coins", value="Coins"),
-    app_commands.Choice(name="Project Welcome", value="Welcome")
+    app_commands.Choice(name="Project Welcome", value="Welcome"),
+    app_commands.Choice(name="Project Ticket", value="Ticket")
 ])
 async def give(
     interaction: discord.Interaction, 
