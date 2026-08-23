@@ -1,0 +1,391 @@
+import os
+import datetime
+import discord
+from discord.ext import commands
+from discord import app_commands, Interaction, ButtonStyle, PermissionOverwrite
+from discord.ui import View, Select, button, Modal, TextInput
+
+# Initialize bot intents
+intents = discord.Intents.default()
+intents.message_content = True
+intents.guilds = True
+intents.members = True
+
+class TicketBot(commands.Bot):
+    def __init__(self):
+        super().__init__(command_prefix=["!", "+", "."], intents=intents)
+        self.support_role_id = None  # Stores configured Support Role ID
+
+    async def setup_hook(self):
+        # Register persistent views across bot restarts
+        self.add_view(TicketPanelView(self))
+        # Register views for each category
+        for cat in ["shop", "apply", "support"]:
+            self.add_view(TicketControlView(category_type=cat))
+
+bot = TicketBot()
+
+# --- Modals ---
+
+# 1. Shop Product Modal (Product Name + Quantity)
+class ShopProductModal(Modal, title="Order Product"):
+    product_name = TextInput(
+        label="Product Name",
+        style=discord.TextStyle.short,
+        placeholder="Enter the product name...",
+        required=True
+    )
+    quantity = TextInput(
+        label="Quantity",
+        style=discord.TextStyle.short,
+        placeholder="Enter quantity (e.g., 1, 5, 10...)",
+        required=True
+    )
+
+    async def on_submit(self, interaction: Interaction):
+        embed = discord.Embed(
+            title="🛒 New Purchase Order",
+            color=discord.Color.green(),
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
+        embed.add_field(name="📦 Product Name:", value=self.product_name.value, inline=False)
+        embed.add_field(name="🔢 Quantity:", value=self.quantity.value, inline=False)
+        embed.set_footer(text=f"User ID: {interaction.user.id}")
+
+        await interaction.response.send_message(
+            f"✅ Your order details have been submitted, {interaction.user.mention}! A staff member will respond shortly.",
+            embed=embed
+        )
+
+# 2. Apply / Seller Modal
+class ApplySellerModal(Modal, title="Seller Application"):
+    real_name = TextInput(
+        label="What is your real name?",
+        style=discord.TextStyle.short,
+        placeholder="Type your real name here...",
+        required=True
+    )
+    age = TextInput(
+        label="What is your age?",
+        style=discord.TextStyle.short,
+        placeholder="Type your age here...",
+        required=True
+    )
+    servers_count = TextInput(
+        label="How many servers are you currently working in?",
+        style=discord.TextStyle.short,
+        placeholder="Type server count...",
+        required=True
+    )
+    feedback_check = TextInput(
+        label="Do you have 10+ feedbacks? (Yes/No)",
+        style=discord.TextStyle.short,
+        placeholder="Yes / No",
+        required=True
+    )
+    seller_roles = TextInput(
+        label="Which seller roles are you applying for?",
+        style=discord.TextStyle.paragraph,
+        placeholder="Type the seller roles you want...",
+        required=True
+    )
+
+    async def on_submit(self, interaction: Interaction):
+        embed = discord.Embed(
+            title="📥 New Seller Application",
+            color=discord.Color.blue(),
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
+        embed.add_field(name="📌 Real Name:", value=self.real_name.value, inline=False)
+        embed.add_field(name="🎂 Age:", value=self.age.value, inline=False)
+        embed.add_field(name="📊 Active Servers Count:", value=self.servers_count.value, inline=False)
+        embed.add_field(name="⭐ Has 10+ Feedbacks?:", value=self.feedback_check.value, inline=False)
+        embed.add_field(name="🏷️ Requested Roles:", value=self.seller_roles.value, inline=False)
+        embed.set_footer(text=f"User ID: {interaction.user.id}")
+
+        await interaction.response.send_message(
+            f"✅ Your application has been submitted, {interaction.user.mention}! Staff will review it shortly.",
+            embed=embed
+        )
+
+# 3. Technical Support Modal
+class SupportModal(Modal, title="Technical Support Request"):
+    issue = TextInput(
+        label="Describe your issue or inquiry",
+        style=discord.TextStyle.paragraph,
+        placeholder="Type details here...",
+        required=True
+    )
+
+    async def on_submit(self, interaction: Interaction):
+        embed = discord.Embed(
+            title="🛠️ Technical Support Ticket",
+            color=discord.Color.orange(),
+            timestamp=discord.utils.utcnow()
+        )
+        embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
+        embed.add_field(name="📝 Issue / Inquiry:", value=self.issue.value, inline=False)
+        embed.set_footer(text=f"User ID: {interaction.user.id}")
+
+        await interaction.response.send_message(
+            f"✅ Support request submitted successfully, {interaction.user.mention}!",
+            embed=embed
+        )
+
+# Modal for renaming a ticket channel
+class RenameModal(Modal, title="Rename Ticket Channel"):
+    new_name = TextInput(
+        label="New Channel Name",
+        style=discord.TextStyle.short,
+        placeholder="e.g. need-payment",
+        required=True
+    )
+
+    async def on_submit(self, interaction: Interaction):
+        formatted_name = self.new_name.value.lower().replace(" ", "-")
+        await interaction.channel.edit(name=formatted_name)
+        await interaction.response.send_message(f"✅ Channel renamed to `{formatted_name}`", ephemeral=True)
+
+# Modal for close reason
+class CloseReasonModal(Modal, title="Close Ticket"):
+    reason = TextInput(
+        label="Reason for closing",
+        style=discord.TextStyle.paragraph,
+        placeholder="Type reason here...",
+        required=False
+    )
+
+    async def on_submit(self, interaction: Interaction):
+        close_msg = f"🔒 **Ticket closed by {interaction.user.mention}**"
+        if self.reason.value:
+            close_msg += f"\n**Reason:** {self.reason.value}"
+        close_msg += "\n⚠️ Channel deleting in 5 seconds..."
+        
+        await interaction.response.send_message(close_msg)
+        await discord.utils.sleep_until(discord.utils.utcnow() + datetime.timedelta(seconds=5))
+        await interaction.channel.delete()
+
+# --- Control View Inside Tickets ---
+
+class TicketControlView(View):
+    def __init__(self, category_type="shop"):
+        super().__init__(timeout=None)
+        self.category_type = category_type
+        
+        # Make Custom ID unique and persistent
+        self.children[0].custom_id = f"click_here_action_{category_type}"
+
+    @button(
+        label="Click Here",
+        style=ButtonStyle.primary,
+        custom_id="click_here_action_default"
+    )
+    async def click_here_action(self, interaction: Interaction, button: discord.ui.Button):
+        if "shop" in self.category_type or "shop" in interaction.channel.name:
+            await interaction.response.send_modal(ShopProductModal())
+        elif "apply" in self.category_type or "apply" in interaction.channel.name:
+            await interaction.response.send_modal(ApplySellerModal())
+        else:
+            await interaction.response.send_modal(SupportModal())
+
+    @button(
+        label="Close",
+        style=ButtonStyle.red,
+        emoji="🗑️",
+        custom_id="close_ticket_btn"
+    )
+    async def close_ticket(self, interaction: Interaction, button: discord.ui.Button):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Only Administrators can close this ticket.", ephemeral=True)
+            return
+        await interaction.response.send_modal(CloseReasonModal())
+
+    @button(
+        label="Rename",
+        style=ButtonStyle.grey,
+        emoji="📌",
+        custom_id="rename_ticket_btn"
+    )
+    async def rename_ticket(self, interaction: Interaction, button: discord.ui.Button):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Only Administrators can rename this ticket.", ephemeral=True)
+            return
+        await interaction.response.send_modal(RenameModal())
+
+# Dropdown selection menu for ticket categories
+class TicketSelect(Select):
+    def __init__(self, bot_instance):
+        self.bot_instance = bot_instance
+        options = [
+            discord.SelectOption(
+                label="Shop Ticket",
+                value="shop",
+                description="For buying or selling items",
+                emoji="🛒"
+            ),
+            discord.SelectOption(
+                label="Apply / Staff Request",
+                value="apply",
+                description="Apply for staff or seller roles",
+                emoji="🪖"
+            ),
+            discord.SelectOption(
+                label="Technical Support",
+                value="support",
+                description="Inquiries, complaints, and general help",
+                emoji="🛠️"
+            )
+        ]
+        super().__init__(
+            placeholder="Make a selection...",
+            min_values=1,
+            max_values=1,
+            options=options,
+            custom_id="ticket_select_menu"
+        )
+
+    async def callback(self, interaction: Interaction):
+        guild = interaction.guild
+        user = interaction.user
+        selected_category = self.values[0]
+
+        category_details = {
+            "shop": {
+                "name": f"shop-{user.name}",
+                "title": "Click On The Button To Start Purchase",
+                "desc": "Please click the button below to start your order.\n\n⚠️ **Note:** If you do not click the button and message directly, staff may not respond."
+            },
+            "apply": {
+                "name": f"apply-{user.name}",
+                "title": "Click On The Button To Start Team Apply Submit",
+                "desc": "Please click the button below to start your application.\n\n⚠️ **Note:** If you do not click the button and message directly, staff may not respond."
+            },
+            "support": {
+                "name": f"support-{user.name}",
+                "title": "Click On The Button To Get Technical Help",
+                "desc": "Please click the button below to open a support request.\n\n⚠️ **Note:** If you do not click the button and message directly, staff may not respond."
+            }
+        }
+
+        details = category_details[selected_category]
+
+        category = discord.utils.get(guild.categories, name="Tickets")
+        if not category:
+            category = await guild.create_category("Tickets")
+
+        channel_name = details["name"].lower()
+        existing_channel = discord.utils.get(guild.channels, name=channel_name)
+        if existing_channel:
+            await interaction.response.send_message(
+                f"❌ You already have an open ticket for this category: {existing_channel.mention}", 
+                ephemeral=True
+            )
+            return
+
+        # Permissions Overwrites
+        overwrites = {
+            guild.default_role: PermissionOverwrite(read_messages=False),
+            user: PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True),
+            guild.me: PermissionOverwrite(read_messages=True, send_messages=True, manage_channels=True)
+        }
+
+        if self.bot_instance.support_role_id:
+            support_role = guild.get_role(self.bot_instance.support_role_id)
+            if support_role:
+                overwrites[support_role] = PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True)
+
+        channel = await guild.create_text_channel(
+            name=channel_name,
+            category=category,
+            overwrites=overwrites
+        )
+
+        ticket_embed = discord.Embed(
+            title=details["title"],
+            description=details["desc"],
+            color=discord.Color.dark_theme()
+        )
+
+        await channel.send(embed=ticket_embed, view=TicketControlView(category_type=selected_category))
+        await interaction.response.send_message(
+            f"✅ Your ticket has been created: {channel.mention}", 
+            ephemeral=True
+        )
+
+# Panel view containing the dropdown menu
+class TicketPanelView(View):
+    def __init__(self, bot_instance):
+        super().__init__(timeout=None)
+        self.add_item(TicketSelect(bot_instance))
+
+# --- Text Commands ---
+
+@bot.command(name="come")
+async def come_user(ctx, member: discord.Member):
+    try:
+        embed = discord.Embed(
+            title="📩 You have been summoned!",
+            description=f"You are requested in the ticket channel: {ctx.channel.mention} on **{ctx.guild.name}**.",
+            color=discord.Color.blue()
+        )
+        await member.send(embed=embed)
+        await ctx.send(f"✅ Sent a direct message to {member.mention}.")
+    except discord.Forbidden:
+        await ctx.send(f"⚠️ Could not send DM to {member.mention} (DMs are closed).")
+
+@bot.command(name="rename")
+@commands.has_permissions(administrator=True)
+async def rename_ticket(ctx, *, new_name: str):
+    formatted_name = new_name.lower().replace(" ", "-")
+    await ctx.channel.edit(name=formatted_name)
+    await ctx.send(f"✅ Channel renamed to `{formatted_name}`.")
+
+@bot.command(name="need")
+async def need_ticket(ctx, *, request: str):
+    formatted_name = f"need-{request}".lower().replace(" ", "-")
+    await ctx.channel.edit(name=formatted_name)
+    await ctx.send(f"📝 Ticket status updated: `{formatted_name}`.")
+
+# --- Slash Commands ---
+
+@bot.event
+async def on_ready():
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} slash command(s).")
+    except Exception as e:
+        print(f"Failed to sync commands: {e}")
+
+    print(f"Logged in as {bot.user} (ID: {bot.user.id})")
+
+@bot.tree.command(name="role_ticket", description="Set the staff role allowed to view and respond to tickets.")
+@app_commands.checks.has_permissions(administrator=True)
+async def role_ticket(interaction: Interaction, role: discord.Role):
+    bot.support_role_id = role.id
+    await interaction.response.send_message(
+        f"✅ {role.mention} has been configured as the Support Staff role for tickets.", 
+        ephemeral=True
+    )
+
+@bot.tree.command(name="setup_ticket", description="Set up the support ticket panel.")
+@app_commands.checks.has_permissions(administrator=True)
+async def setup_ticket(interaction: Interaction):
+    panel_embed = discord.Embed(
+        title="General Ticket",
+        description=(
+            "Welcome to Support Tickets 💎 !\n\n"
+            "This panel includes **Order**, **Support**, and **Seller/Staff Requests**.\n"
+            "Please select the appropriate category from the menu below for a smooth experience."
+        ),
+        color=discord.Color.dark_green()
+    )
+    panel_embed.set_footer(text="Ticketing without clutter")
+
+    await interaction.channel.send(embed=panel_embed, view=TicketPanelView(bot))
+    await interaction.response.send_message("✅ Ticket panel created successfully!", ephemeral=True)
+
+# Run bot using your environment variable
+TOKEN = os.getenv("DISCORD_TOKEN")
+bot.run(TOKEN)
