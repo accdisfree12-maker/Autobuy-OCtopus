@@ -34,13 +34,13 @@ EMOJIS = {
 
 # Zdt hna "tutorial" f kulla منتج باش تحط فيه lien dyal l-video dyalo
 PRODUCTS = {
-    "autobuy": {"name": "Project Auto Buy", "price": 30000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 6, "tutorial": "https://youtu.be/h4qCmWpSMZ8"},
-    "shop": {"name": "Project Systeme Shop", "price": 30000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 6, "tutorial": "https://youtu.be/XobMtzyP8jE"},
-    "broadcast": {"name": "Project Broadcast", "price": 30000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 6, "tutorial": "https://youtu.be/Jhw6q8OcivE"},
-    "giveaway": {"name": "Project Giveaway", "price": 30000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 6, "tutorial": "https://youtu.be/5SWUG9360kM"},
-    "invites": {"name": "Project Invites", "price": 30000000, "type": "Source Code", "file": "Invites.txt", "stock": 6, "tutorial": "https://youtu.be/RN6Has9NKp4"},
-    "Tax": {"name": "Project Tax", "price": 30000000, "type": "Source Code", "file": "Tax.txt", "stock": 6, "tutorial": "https://youtu.be/usveduNlrm4"},
-    "Coins": {"name": "Project Coins", "price": 30000000, "type": "Source Code", "file": "Coins.txt", "stock": 6, "tutorial": "https://youtu.be/Nk10PIzlfbU"}
+    "autobuy": {"name": "Project Auto Buy", "price": 20000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 3, "tutorial": "https://youtu.be/h4qCmWpSMZ8"},
+    "shop": {"name": "Project Systeme Shop", "price": 20000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 3, "tutorial": "https://youtu.be/XobMtzyP8jE"},
+    "broadcast": {"name": "Project Broadcast", "price": 20000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 3, "tutorial": "https://youtu.be/Jhw6q8OcivE"},
+    "giveaway": {"name": "Project Giveaway", "price": 20000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 3, "tutorial": "https://youtu.be/5SWUG9360kM"},
+    "invites": {"name": "Project Invites", "price": 20000000, "type": "Source Code", "file": "Invites.txt", "stock": 3, "tutorial": "https://youtu.be/RN6Has9NKp4"},
+    "Tax": {"name": "Project Tax", "price": 20000000, "type": "Source Code", "file": "Tax.txt", "stock": 3, "tutorial": "https://youtu.be/usveduNlrm4"},
+    "Coins": {"name": "Project Coins", "price": 20000000, "type": "Source Code", "file": "Coins.txt", "stock": 3, "tutorial": "https://youtu.be/Nk10PIzlfbU"}
 }
 
 pending_orders = {}
