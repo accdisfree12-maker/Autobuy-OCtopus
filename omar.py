@@ -42,7 +42,7 @@ PRODUCTS = {
     "Tax": {"name": "Project Tax", "price": 15000000, "type": "Source Code", "file": "Tax.txt", "stock": 3, "tutorial": "https://youtu.be/usveduNlrm4"},
     "Coins": {"name": "Project Coins", "price": 12500000, "type": "Source Code", "file": "Coins.txt", "stock": 3, "tutorial": "https://youtu.be/Nk10PIzlfbU"},
     "Welcome": {"name": "Project Welcome", "price": 10000000, "type": "Source Code", "file": "Welcome.txt", "stock": 3, "Tutorial": "https://youtu.be/mGIw9Tznqd8"}
-    "Ticket": {"name": "Project Ticket", "price": 10000000, "type": "Source Code", "file": "Ticket.txt", "stock": 3, "Tutorial": ""}
+    "Ticket": {"name": "Project Ticket", "price": 10000000, "type": "Source Code", "file": "Ticket.txt", "stock": 3, "Tutorial": "https://youtu.be/dzwYlEAJm7s"}
 }
 
 pending_orders = {}
