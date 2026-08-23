@@ -40,7 +40,8 @@ PRODUCTS = {
     "giveaway": {"name": "Project Giveaway", "price": 20000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 3, "tutorial": "https://youtu.be/5SWUG9360kM"},
     "invites": {"name": "Project Invites", "price": 17500000, "type": "Source Code", "file": "Invites.txt", "stock": 3, "tutorial": "https://youtu.be/RN6Has9NKp4"},
     "Tax": {"name": "Project Tax", "price": 15000000, "type": "Source Code", "file": "Tax.txt", "stock": 3, "tutorial": "https://youtu.be/usveduNlrm4"},
-    "Coins": {"name": "Project Coins", "price": 12500000, "type": "Source Code", "file": "Coins.txt", "stock": 3, "tutorial": "https://youtu.be/Nk10PIzlfbU"}
+    "Coins": {"name": "Project Coins", "price": 12500000, "type": "Source Code", "file": "Coins.txt", "stock": 3, "tutorial": "https://youtu.be/Nk10PIzlfbU"},
+    "Welcome": {"name": "Project Welcome", "price": 10000000, "type": "Source Code", "file": "Welcome.txt", "stock": 3, "Tutorial": "soon"}
 }
 
 pending_orders = {}
@@ -134,7 +135,8 @@ async def stock(interaction: discord.Interaction):
     app_commands.Choice(name="Project Giveaway", value="giveaway"),
     app_commands.Choice(name="Project Invites", value="invites"),
     app_commands.Choice(name="Project Tax", value="Tax"),
-    app_commands.Choice(name="Project Coins", value="Coins")
+    app_commands.Choice(name="Project Coins", value="Coins"),
+    app_commands.Choice(name="Project Welcome", value="Welcome")
 ])
 async def buy(interaction: discord.Interaction, product: str, quantity: int = 1):
     if BUY_CHANNEL_ID != 0 and interaction.channel_id != BUY_CHANNEL_ID:
@@ -190,7 +192,8 @@ async def buy(interaction: discord.Interaction, product: str, quantity: int = 1)
     app_commands.Choice(name="Project Giveaway", value="giveaway"),
     app_commands.Choice(name="Project Invites", value="invites"),
     app_commands.Choice(name="Project Tax", value="Tax"),
-    app_commands.Choice(name="Project Coins", value="Coins")
+    app_commands.Choice(name="Project Coins", value="Coins"),
+    app_commands.Choice(name="Project Welcome", value="Welcome")
 ])
 async def give(
     interaction: discord.Interaction, 
