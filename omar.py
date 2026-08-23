@@ -40,7 +40,7 @@ PRODUCTS = {
     "giveaway": {"name": "Project Giveaway", "price": 30000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 6, "tutorial": "https://youtu.be/5SWUG9360kM"},
     "invites": {"name": "Project Invites", "price": 30000000, "type": "Source Code", "file": "Invites.txt", "stock": 6, "tutorial": "https://youtu.be/RN6Has9NKp4"},
     "Tax": {"name": "Project Tax", "price": 30000000, "type": "Source Code", "file": "Tax.txt", "stock": 6, "tutorial": "https://youtu.be/usveduNlrm4"},
-    "Coins": {"name": "Project Coins", "price": 1, "type": "Source Code", "file": "Coins.txt", "stock": 6, "tutorial": "https://youtu.be/Nk10PIzlfbU"}
+    "Coins": {"name": "Project Coins", "price": 30000000, "type": "Source Code", "file": "Coins.txt", "stock": 6, "tutorial": "https://youtu.be/Nk10PIzlfbU"}
 }
 
 pending_orders = {}
