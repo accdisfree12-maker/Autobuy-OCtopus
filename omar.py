@@ -39,7 +39,7 @@ PRODUCTS = {
     "giveaway": {"name": "Project Giveaway", "price": 30000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 6},
     "invites": {"name": "Project Invites", "price": 30000000, "type": "Source Code", "file": "Invites.txt", "stock": 6},
     "Tax": {"name": "Project Tax", "price": 30000000, "type": "Source Code", "file": "Tax.txt", "stock": 6},
-    "Coins": {"name": "Project Tax", "price": 30000000, "type": "Source Code", "file": "Coins.txt", "stock": 6}
+    "Coins": {"name": "Project Coins", "price": 30000000, "type": "Source Code", "file": "Coins.txt", "stock": 6}
 }
 
 pending_orders = {}
