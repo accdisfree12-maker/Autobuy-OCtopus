@@ -1,0 +1,55 @@
+import os
+import discord
+from discord.ext import commands
+
+# Bi2at l-bot u l-permissions
+intents = discord.Intents.default()
+intents.members = True 
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Configuration via Environment Variables (Railway / System)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+# Channels u Config
+WELCOME_CHANNEL_ID = 1541095990935945296 
+TICKET_CHANNEL_ID = 1538901953331986594  
+STOCK_CHANNEL_ID = 1539813725865775224
+BUY_ROOM_ID = 1539796754428465183
+RULES_CHANNEL_ID = 1538901951255683172
+TUTORIALS_CHANNEL_ID = 1540525576740278332
+
+CUSTOM_EMOJI = "<a:emojie_12:1539422948849614938>" 
+THUMBNAIL_URL = "https://cdn.discordapp.com/attachments/1254112291096363150/1540882382134181988/image.png" 
+BANNER_URL = "https://cdn.discordapp.com/attachments/1254112291096363150/1541099333750099978/welcome-7401530_640.png" 
+
+@bot.event
+async def on_ready():
+    print(f"Bot is online as {bot.user}")
+
+@bot.event
+async def on_member_join(member):
+    channel = bot.get_channel(WELCOME_CHANNEL_ID)
+    if not channel:
+        return
+
+    created_at = member.created_at.strftime("%A, %B %d, %Y at %I:%M %p")
+
+    embed = discord.Embed(
+        description=(
+            f"{CUSTOM_EMOJI} **Hello {member.mention}**\n\n"
+            f"**Welcome To Octopus-S**\n"
+            f"Order something ➔ <#{TICKET_CHANNEL_ID}> .\n"
+            f"Join the team ➔ <#{TICKET_CHANNEL_ID}>.\n\n"            
+            f"To Buy ➔ Check Stock <#{STOCK_CHANNEL_ID}> And use /buy In this room <#{BUY_ROOM_ID}>.\n\n"
+            f"Important ➔ Check rules here <#{RULES_CHANNEL_ID}> Also Tutorials <#{TUTORIALS_CHANNEL_ID}>.\n\n"
+            f"➔ **Account Created:** {created_at}"
+        ),
+        color=discord.Color.gold()
+    )
+
+    embed.set_thumbnail(url=THUMBNAIL_URL)
+    embed.set_image(url=BANNER_URL)
+
+    await channel.send(content=f"{member.mention}", embed=embed)
+
+bot.run(BOT_TOKEN)
