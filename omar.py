@@ -34,15 +34,15 @@ EMOJIS = {
 
 # Zdt hna "tutorial" f kulla منتج باش تحط فيه lien dyal l-video dyalo
 PRODUCTS = {
-    "autobuy": {"name": "Project Auto Buy", "price": 37500000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 3, "tutorial": "https://youtu.be/BOKeCSEFZtY"},
-    "shop": {"name": "Project Systeme Shop", "price": 27500000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 3, "tutorial": "https://youtu.be/h4qCmWpSMZ8"},
-    "broadcast": {"name": "Project Broadcast", "price": 25000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 3, "tutorial": "https://youtu.be/Jhw6q8OcivE"},
-    "giveaway": {"name": "Project Giveaway", "price": 20000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 3, "tutorial": "https://youtu.be/5SWUG9360kM"},
-    "invites": {"name": "Project Invites", "price": 17500000, "type": "Source Code", "file": "Invites.txt", "stock": 3, "tutorial": "https://youtu.be/RN6Has9NKp4"},
-    "Tax": {"name": "Project Tax", "price": 15000000, "type": "Source Code", "file": "Tax.txt", "stock": 3, "tutorial": "https://youtu.be/usveduNlrm4"},
-    "Coins": {"name": "Project Coins", "price": 12500000, "type": "Source Code", "file": "Coins.txt", "stock": 3, "tutorial": "https://youtu.be/Nk10PIzlfbU"},
-    "Welcome": {"name": "Project Welcome", "price": 10000000, "type": "Source Code", "file": "Welcome.txt", "stock": 3, "Tutorial": "https://youtu.be/mGIw9Tznqd8"},
-    "Ticket": {"name": "Project Ticket", "price": 10000000, "type": "Source Code", "file": "Ticket.txt", "stock": 3, "Tutorial": "https://youtu.be/dzwYlEAJm7s"}
+    "autobuy": {"name": "Project Auto Buy Just Main.py Code", "price": 110000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 13, "tutorial": "https://youtu.be/BOKeCSEFZtY"},
+    "shop": {"name": "Project Systeme Shop Just Main.py Code", "price": 150000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 13, "tutorial": "https://youtu.be/h4qCmWpSMZ8"},
+    "broadcast": {"name": "Project Broadcast Just Main.py Code", "price": 100000000, "type": "Source Code", "file": "Broadcast.txt", "stock": 13, "tutorial": "https://youtu.be/Jhw6q8OcivE"},
+    "giveaway": {"name": "Project Giveaway Just Main.py Code", "price": 80000000, "type": "Source Code", "file": "Giveaway.txt", "stock": 13, "tutorial": "https://youtu.be/5SWUG9360kM"},
+    "invites": {"name": "Project Invites Just Main.py Code", "price": 70000000, "type": "Source Code", "file": "Invites.txt", "stock": 13, "tutorial": "https://youtu.be/RN6Has9NKp4"},
+    "Tax": {"name": "Project Tax Just Main.py Code", "price": 70000000, "type": "Source Code", "file": "Tax.txt", "stock": 13, "tutorial": "https://youtu.be/usveduNlrm4"},
+    "Coins": {"name": "Project Coins Just Main.py Code", "price": 65000000, "type": "Source Code", "file": "Coins.txt", "stock": 13, "tutorial": "https://youtu.be/Nk10PIzlfbU"},
+    "Welcome": {"name": "Project Welcome Just Main.py Code", "price": 60000000, "type": "Source Code", "file": "Welcome.txt", "stock": 13, "Tutorial": "https://youtu.be/mGIw9Tznqd8"},
+    "Ticket": {"name": "Project Ticket Just Main.py Code", "price": 50000000, "type": "Source Code", "file": "Ticket.txt", "stock": 13, "Tutorial": "https://youtu.be/dzwYlEAJm7s"}
 }
 
 pending_orders = {}
