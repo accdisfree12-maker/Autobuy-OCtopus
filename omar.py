@@ -4,18 +4,22 @@ from discord.ext import commands
 import os
 import re
 import math
+import asyncio
 from typing import Optional
 
 # --- CONFIGURATION ---
-TOKEN = os.getenv("TOKEN")            
+TOKEN = os.getenv("TOKEN")             
 TARGET_USER_ID = 1241496820455313533 
-PROBOT_ID = 282859044593598464       
+PROBOT_ID = 282859044593598464        
 
 # --- PERMISSIONS & ROOMS CONFIG ---
 ALLOWED_ADMIN_IDS = [1488072348107014244, 1241496820455313533, 1242950158052884511] 
 STOCK_CHANNEL_ID = 1539813725865775224  
 BUY_CHANNEL_ID = 1539796754428465183    
 REFUND_CHANNEL_ID = 1539813213158506566 
+
+# ZID HNA L-ID DYAL L-VOICE CHANNEL LLI BGHITI L-BOT YDKHOL LIH (A3TIH ID DYAL VOICE):
+VOICE_CHANNEL_ID = 1234567890123456789  # <--- Bddel had l-ID b-ID dyal Voice Channel
 
 # --- CUSTOM EMOJIS ---
 EMOJIS = {
@@ -24,15 +28,14 @@ EMOJIS = {
     "price": "<a:MoneySoaring:1539798937345589308>",      
     "stock": "📦",      
     "info": "<a:dev:1539799868782940231>",        
-    "card": "<a:BlackMoneyCard:1323318279955152956>",       
-    "gift": "<a:Oc_Giveway:1539800809691283546>",       
+    "card": "<a:BlackMoneyCard:1323318279955152956>",        
+    "gift": "<a:Oc_Giveway:1539800809691283546>",        
     "success": "<:yes:1539801006899204116>",    
     "error": "<:No:1539801163736686622>",      
     "warning": "<a:aha:1539423195374026798>",    
     "reason": "<:emoji_164:1539801927955648552>"      
 }
 
-# Zdt hna "tutorial" f kulla منتج باش تحط فيه lien dyal l-video dyalo
 PRODUCTS = {
     "autobuy": {"name": "Project Auto Buy Just Main.py Code", "price": 110000000, "type": "Source Code", "file": "Auto Buy.txt", "stock": 13, "tutorial": "https://youtu.be/BOKeCSEFZtY"},
     "shop": {"name": "Project Systeme Shop Just Main.py Code", "price": 150000000, "type": "Source Code", "file": "Systeme Shop.txt", "stock": 13, "tutorial": "https://youtu.be/h4qCmWpSMZ8"},
@@ -54,6 +57,7 @@ class ShopBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
+        intents.voice_states = True # M-mouhimma bash l-voice ykhdm mzyan
         super().__init__(command_prefix="!", intents=intents)
 
     async def on_ready(self):
@@ -64,6 +68,17 @@ class ShopBot(commands.Bot):
         )
         await self.change_presence(status=discord.Status.online, activity=activity)
         print(f"{EMOJIS['success']} Bot Online as: {self.user}")
+
+        # --- AUTO-JOIN VOICE CHANNEL 24/7 ---
+        if VOICE_CHANNEL_ID and VOICE_CHANNEL_ID != 0:
+            try:
+                channel = self.get_channel(VOICE_CHANNEL_ID) or await self.fetch_channel(VOICE_CHANNEL_ID)
+                if channel and isinstance(channel, discord.VoiceChannel):
+                    if not any(vc.channel.id == VOICE_CHANNEL_ID for vc in self.voice_clients):
+                        await channel.connect(reconnect=True, self_deaf=True)
+                        print(f"{EMOJIS['success']} Connected automatically to Voice Channel: {channel.name}")
+            except Exception as e:
+                print(f"{EMOJIS['warning']} Failed to connect to Voice Channel: {e}")
 
 bot = ShopBot()
 
@@ -101,6 +116,29 @@ async def update_stock_display():
         )
     
     await channel.send(embed=embed)
+
+# --- VOICE SLASH COMMANDS ---
+@bot.tree.command(name="join_voice", description="Khlli l-bot ydkhl l-voice channel dyalak")
+async def join_voice(interaction: discord.Interaction):
+    if not interaction.user.voice or not interaction.user.voice.channel:
+        await interaction.response.send_message(f"{EMOJIS['error']} Khassak tkun f-salon vocal!", ephemeral=True)
+        return
+
+    vchannel = interaction.user.voice.channel
+    if interaction.guild.voice_client:
+        await interaction.guild.voice_client.move_to(vchannel)
+    else:
+        await vchannel.connect(self_deaf=True)
+
+    await interaction.response.send_message(f"{EMOJIS['success']} Dkhelt l-salon vocal: **{vchannel.name}**")
+
+@bot.tree.command(name="leave_voice", description="Khlli l-bot ykhroj mn l-voice channel")
+async def leave_voice(interaction: discord.Interaction):
+    if interaction.guild.voice_client:
+        await interaction.guild.voice_client.disconnect()
+        await interaction.response.send_message(f"{EMOJIS['success']} Khrejt mn l-salon vocal.")
+    else:
+        await interaction.response.send_message(f"{EMOJIS['error']} Bot ma khddamsh f-chi salon vocal.", ephemeral=True)
 
 # --- COMMAND /STOCK ---
 @bot.tree.command(name="stock", description="Voir les produits disponibles en stock")
@@ -185,7 +223,7 @@ async def buy(interaction: discord.Interaction, product: str, quantity: int = 1)
     )
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-# --- COMMAND /GIVE (TA3WID / REPLACEMENT) ---
+# --- COMMAND /GIVE ---
 @bot.tree.command(name="give", description="Donner manuellement un produit à un utilisateur (Ta3wid)")
 @app_commands.choices(product=[
     app_commands.Choice(name="Project Auto Buy", value="autobuy"),
@@ -248,7 +286,6 @@ async def give(
             f"{EMOJIS['success']} **{quantity}x {prod_info['name']}** envoyé(s) avec succès à {user.mention} en MP ! (Stock restant: {prod_info['stock']})"
         )
         
-        # Auto refresh stock channel
         await update_stock_display()
     except Exception as e:
         await interaction.response.send_message(
@@ -302,7 +339,6 @@ async def on_message(message: discord.Message):
 
                             await message.channel.send(f"{EMOJIS['success']} Merci <@{matched_user_id}> ! Vos fichiers ont été envoyés en MP.")
                             
-                            # Auto refresh stock channel
                             await update_stock_display()
                         else:
                             await message.channel.send(f"{EMOJIS['warning']} Erreur lors de la récupération du fichier ou stock épuisé pour <@{matched_user_id}>.")
