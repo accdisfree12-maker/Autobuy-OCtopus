@@ -10,7 +10,7 @@ from typing import Optional
 # --- CONFIGURATION ---
 TOKEN = os.getenv("TOKEN")             
 TARGET_USER_ID = 1241496820455313533 
-PROBOT_ID = 282859044593598464        
+PROBOT_ID = 282859044593598464       
 
 # --- PERMISSIONS & ROOMS CONFIG ---
 ALLOWED_ADMIN_IDS = [1488072348107014244, 1241496820455313533, 1242950158052884511] 
@@ -18,8 +18,11 @@ STOCK_CHANNEL_ID = 1539813725865775224
 BUY_CHANNEL_ID = 1539796754428465183    
 REFUND_CHANNEL_ID = 1539813213158506566 
 
-# ZID HNA L-ID DYAL L-VOICE CHANNEL LLI BGHITI L-BOT YDKHOL LIH (A3TIH ID DYAL VOICE):
-VOICE_CHANNEL_ID = 1538901939562217563  # <--- Bddel had l-ID b-ID dyal Voice Channel
+# --- CHANNELS DONE & FEEDBACKS ---
+DONE_CHANNEL_ID = 1539814000000000000     # <--- Bddel had l-ID b-ID dyal #done channel
+FEEDBACK_CHANNEL_ID = 1539815000000000000 # <--- Bddel had l-ID b-ID dyal #feedbacks channel
+
+VOICE_CHANNEL_ID = 1538901939562217563 
 
 # --- CUSTOM EMOJIS ---
 EMOJIS = {
@@ -28,8 +31,8 @@ EMOJIS = {
     "price": "<a:MoneySoaring:1539798937345589308>",      
     "stock": "📦",      
     "info": "<a:dev:1539799868782940231>",        
-    "card": "<a:BlackMoneyCard:1323318279955152956>",        
-    "gift": "<a:Oc_Giveway:1539800809691283546>",        
+    "card": "<a:BlackMoneyCard:1323318279955152956>",       
+    "gift": "<a:Oc_Giveway:1539800809691283546>",       
     "success": "<:yes:1539801006899204116>",    
     "error": "<:No:1539801163736686622>",      
     "warning": "<a:aha:1539423195374026798>",    
@@ -57,7 +60,7 @@ class ShopBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
-        intents.voice_states = True # M-mouhimma bash l-voice ykhdm mzyan
+        intents.voice_states = True
         super().__init__(command_prefix="!", intents=intents)
 
     async def on_ready(self):
@@ -69,7 +72,6 @@ class ShopBot(commands.Bot):
         await self.change_presence(status=discord.Status.online, activity=activity)
         print(f"{EMOJIS['success']} Bot Online as: {self.user}")
 
-        # --- AUTO-JOIN VOICE CHANNEL 24/7 ---
         if VOICE_CHANNEL_ID and VOICE_CHANNEL_ID != 0:
             try:
                 channel = self.get_channel(VOICE_CHANNEL_ID) or await self.fetch_channel(VOICE_CHANNEL_ID)
@@ -84,6 +86,33 @@ bot = ShopBot()
 
 def is_product_available(file_path):
     return os.path.exists(file_path) and os.path.getsize(file_path) > 0
+
+# --- HELPER FUNCTION: LOG TO #DONE CHANNEL ---
+async def send_done_log(user: discord.User, project_name: str, delivery_type: str, amount: str, admin: Optional[discord.User] = None):
+    if DONE_CHANNEL_ID == 0:
+        return
+    channel = bot.get_channel(DONE_CHANNEL_ID)
+    if not channel:
+        try:
+            channel = await bot.fetch_channel(DONE_CHANNEL_ID)
+        except Exception:
+            return
+
+    embed = discord.Embed(color=discord.Color.purple(), timestamp=discord.utils.utcnow())
+    
+    desc = (
+        f"# USER : {user.mention}\n\n"
+        f"# PROJECT : {project_name}\n\n"
+        f"**Type:** `{delivery_type}`\n"
+        f"**Amount:** `{amount}`"
+    )
+    if admin:
+        desc += f"\n**Given By:** {admin.mention}"
+
+    embed.description = desc
+    embed.set_footer(text="Octopus Studio")
+    
+    await channel.send(embed=embed)
 
 # --- HELPER FUNCTION: UPDATE STOCK CHANNEL AUTOMATICALLY ---
 async def update_stock_display():
@@ -270,11 +299,12 @@ async def give(
         return
 
     reason_str = f"\n{EMOJIS['reason']} **Raison:** {reason}" if reason else ""
-    tutorial_link = prod_info.get("tutorial", "")
+    tutorial_link = prod_info.get("tutorial", prod_info.get("Tutorial", ""))
     tutorial_str = f"\n\n🎥 **Tutoriel Video:** {tutorial_link}" if tutorial_link else ""
+    feedback_str = f"\n\n⭐ **Matnssach wahd feedback f <#{FEEDBACK_CHANNEL_ID}> rah kichaj3na bach nzido lgdam!**" if FEEDBACK_CHANNEL_ID != 0 else ""
 
     dm_embed = discord.Embed(title=f"{EMOJIS['gift']} Livraison Manuelle / Ta3wid", color=discord.Color.green())
-    dm_embed.description = f"Un administrateur vous a envoyé **{quantity}x {prod_info['name']}**.{reason_str}{tutorial_str}\n\n📁 **Le fichier source est joint ci-dessous.**"
+    dm_embed.description = f"Un administrateur vous a envoyé **{quantity}x {prod_info['name']}**.{reason_str}{tutorial_str}{feedback_str}\n\n📁 **Le fichier source est joint ci-dessous.**"
 
     try:
         file_attachment = discord.File(prod_info["file"], filename=f"{prod_info['name']}.py")
@@ -286,6 +316,15 @@ async def give(
             f"{EMOJIS['success']} **{quantity}x {prod_info['name']}** envoyé(s) avec succès à {user.mention} en MP ! (Stock restant: {prod_info['stock']})"
         )
         
+        # LOG TO DONE CHANNEL
+        await send_done_log(
+            user=user, 
+            project_name=prod_info["name"], 
+            delivery_type="cmd /give", 
+            amount=f"Free / Given ({quantity}x)", 
+            admin=interaction.user
+        )
+
         await update_stock_display()
     except Exception as e:
         await interaction.response.send_message(
@@ -327,11 +366,12 @@ async def on_message(message: discord.Message):
                         if is_product_available(prod_info["file"]) and user and prod_info["stock"] >= order["quantity"]:
                             file_attachment = discord.File(prod_info["file"], filename=f"{prod_info['name']}.py")
                             
-                            tutorial_link = prod_info.get("tutorial", "")
+                            tutorial_link = prod_info.get("tutorial", prod_info.get("Tutorial", ""))
                             tutorial_msg = f"\n🎥 **Tutoriel Video:** {tutorial_link}" if tutorial_link else ""
+                            feedback_msg = f"\n\n⭐ **Matnssach wahd feedback f <#{FEEDBACK_CHANNEL_ID}> rah kichaj3na bach nzido lgdam!**" if FEEDBACK_CHANNEL_ID != 0 else ""
 
                             await user.send(
-                                content=f"{EMOJIS['success']} **Paiement Reçu avec succès!**\nVoici votre fichier source pour **{prod_info['name']}**:{tutorial_msg}",
+                                content=f"{EMOJIS['success']} **Paiement Reçu avec succès!**\nVoici votre fichier source pour **{prod_info['name']}**:{tutorial_msg}{feedback_msg}",
                                 file=file_attachment
                             )
                             
@@ -339,6 +379,14 @@ async def on_message(message: discord.Message):
 
                             await message.channel.send(f"{EMOJIS['success']} Merci <@{matched_user_id}> ! Vos fichiers ont été envoyés en MP.")
                             
+                            # LOG TO DONE CHANNEL
+                            await send_done_log(
+                                user=user, 
+                                project_name=prod_info["name"], 
+                                delivery_type="cmd /buy", 
+                                amount=f"${order['total_price']}"
+                            )
+
                             await update_stock_display()
                         else:
                             await message.channel.send(f"{EMOJIS['warning']} Erreur lors de la récupération du fichier ou stock épuisé pour <@{matched_user_id}>.")
